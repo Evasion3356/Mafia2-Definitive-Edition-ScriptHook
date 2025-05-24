@@ -2,8 +2,7 @@ Place the files in the Mafia 2 Definitive Edition *pc* folder so the structure l
 
 | pc
 | - Mafia 2 Definitive Edition.exe
-| - M2DEScriptHook.dll
-| - M2DEScriptHookLauncher.exe
+| - dxgi.dll
 | - scripts/*.lua
 | - plugins/*.dll
 

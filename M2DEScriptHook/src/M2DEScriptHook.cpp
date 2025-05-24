@@ -36,6 +36,7 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
+#include <iomanip>
 #include <algorithm>
 
 #include <M2DEScriptHook.h>
@@ -111,11 +112,16 @@ void M2DEScriptHook::Log(const char* string, ...)
 
 	currentBuffer = (currentBuffer + 1) % BUFFER_COUNT;
 
-	const char* msg =  &buffer[thisBuffer * BUFFER_LENGTH];
+	const char* msg = &buffer[thisBuffer * BUFFER_LENGTH];
 
 	std::fstream file("ScriptHook.log", std::ios::out | std::ios::app);
-	file << msg;
-	file << "\n";
+
+	auto now = std::chrono::system_clock::now();
+	auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+	auto timer = std::chrono::system_clock::to_time_t(now);
+	auto local_time = *std::localtime(&timer);
+
+	file << "[" << std::put_time(&local_time, "%m/%d/%Y %I:%M:%S") << ":" << std::setfill('0') << std::setw(3) << ms.count() << " " << std::put_time(&local_time, "%p") << "] " << msg << std::endl;
 	file.close();
 }
 
@@ -215,6 +221,15 @@ bool M2DEScriptHook::ExecuteLua(lua_State *L, const std::string &lua)
 			this->Log("Error loading Lua code into buffer with (Memory Allocation Error)");
 			return false;
 		}
+		else if (LUA_ERRRUN == result)
+		{
+			std::stringstream ss;
+			ss << "Runtime Lua error. Message: ";
+			const char* error = lua_tostring_(L, -1);
+			ss << error;
+			this->Log(ss.str());
+			return false;
+		}
 		else
 		{
 			std::stringstream ss;
@@ -229,12 +244,13 @@ bool M2DEScriptHook::ExecuteLua(lua_State *L, const std::string &lua)
 	return true;
 }
 
+
 uint32_t WINAPI M2DEScriptHook::mainThread(LPVOID) {
 	static M2DEScriptHook *instance = M2DEScriptHook::instance();
 
 	instance->Log(__FUNCTION__);
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
 	while (!instance->HasEnded()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -274,7 +290,7 @@ void M2DEScriptHook::Shutdown()
 
 void M2DEScriptHook::CreateKeyBind(const char *key, const char *context)
 {
-	this->Log(__FUNCTION__);
+	M2DEScriptHook::instance()->Log("Binding key %s to function %s", key, context);
 	std::unique_lock<std::recursive_mutex> lkScr(_keyBindMutex);
 
 	bool found = false;
@@ -296,7 +312,7 @@ void M2DEScriptHook::CreateKeyBind(const char *key, const char *context)
 
 void M2DEScriptHook::DestroyKeyBind(const char *key, const char *context)
 {
-	this->Log(__FUNCTION__);
+	M2DEScriptHook::instance()->Log("Unbinding key %", key);
 	//std::lock_guard<std::mutex> lk{ _keyBindMutex };
 	std::unique_lock<std::recursive_mutex> lkScr(_keyBindMutex);
 

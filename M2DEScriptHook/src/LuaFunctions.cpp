@@ -220,7 +220,6 @@ int32_t LuaFunctions::PrintToLog(lua_State *L)
 
 int32_t LuaFunctions::BindKey(lua_State *L)
 {
-	M2DEScriptHook::instance()->Log(__FUNCTION__);
 	const char *key = "";
 	const char *context = "";
 
@@ -238,7 +237,6 @@ int32_t LuaFunctions::BindKey(lua_State *L)
 
 int32_t LuaFunctions::UnbindKey(lua_State *L)
 {
-	M2DEScriptHook::instance()->Log(__FUNCTION__);
 	const char *key = "";
 	const char *context = "";
 
@@ -309,11 +307,12 @@ LuaFunctions::LuaFunctions()
 {
 	M2DEScriptHook::instance()->Log(__FUNCTION__);
 	// Yep, it's thread blocking, but that's what I want, no processing of other stuff until this shit's ready..
-	do {
+	while (!LoadPointers())
+	{
 		M2DEScriptHook::instance()->Log(__FUNCTION__ " Game is not ready, script engine not initialized, retry");
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		std::this_thread::yield();
-	} while (!LoadPointers());
+	}
 } 
 
 bool LuaFunctions::IsMainScriptMachineReady()
