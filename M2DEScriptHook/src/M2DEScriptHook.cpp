@@ -44,6 +44,33 @@
 #include <ScriptSystem.h>
 #include <hooking/hooking.h>
 
+#ifdef _WIN64
+#define DLLPATH "\\\\.\\GLOBALROOT\\SystemRoot\\System32\\dxgi.dll"
+#else
+#define DLLPATH "\\\\.\\GLOBALROOT\\SystemRoot\\SysWOW64\\dxgi.dll"
+#endif // _WIN64
+
+#pragma comment(linker, "/EXPORT:ApplyCompatResolutionQuirking=" DLLPATH ".ApplyCompatResolutionQuirking")
+#pragma comment(linker, "/EXPORT:CompatString=" DLLPATH ".CompatString")
+#pragma comment(linker, "/EXPORT:CompatValue=" DLLPATH ".CompatValue")
+#pragma comment(linker, "/EXPORT:CreateDXGIFactory=" DLLPATH ".CreateDXGIFactory")
+#pragma comment(linker, "/EXPORT:CreateDXGIFactory1=" DLLPATH ".CreateDXGIFactory1")
+#pragma comment(linker, "/EXPORT:CreateDXGIFactory2=" DLLPATH ".CreateDXGIFactory2")
+#pragma comment(linker, "/EXPORT:DXGID3D10CreateDevice=" DLLPATH ".DXGID3D10CreateDevice")
+#pragma comment(linker, "/EXPORT:DXGID3D10CreateLayeredDevice=" DLLPATH ".DXGID3D10CreateLayeredDevice")
+#pragma comment(linker, "/EXPORT:DXGID3D10GetLayeredDeviceSize=" DLLPATH ".DXGID3D10GetLayeredDeviceSize")
+#pragma comment(linker, "/EXPORT:DXGID3D10RegisterLayers=" DLLPATH ".DXGID3D10RegisterLayers")
+#pragma comment(linker, "/EXPORT:DXGIDeclareAdapterRemovalSupport=" DLLPATH ".DXGIDeclareAdapterRemovalSupport")
+#pragma comment(linker, "/EXPORT:DXGIDisableVBlankVirtualization=" DLLPATH ".DXGIDisableVBlankVirtualization")
+#pragma comment(linker, "/EXPORT:DXGIDumpJournal=" DLLPATH ".DXGIDumpJournal")
+#pragma comment(linker, "/EXPORT:DXGIGetDebugInterface1=" DLLPATH ".DXGIGetDebugInterface1")
+#pragma comment(linker, "/EXPORT:DXGIReportAdapterConfiguration=" DLLPATH ".DXGIReportAdapterConfiguration")
+#pragma comment(linker, "/EXPORT:PIXBeginCapture=" DLLPATH ".PIXBeginCapture")
+#pragma comment(linker, "/EXPORT:PIXEndCapture=" DLLPATH ".PIXEndCapture")
+#pragma comment(linker, "/EXPORT:PIXGetCaptureState=" DLLPATH ".PIXGetCaptureState")
+#pragma comment(linker, "/EXPORT:SetAppCompatStringPointer=" DLLPATH ".SetAppCompatStringPointer")
+#pragma comment(linker, "/EXPORT:UpdateHMDEmulationStatus=" DLLPATH ".UpdateHMDEmulationStatus")
+
 M2DEScriptHook::M2DEScriptHook()
 {
 	Log(__FUNCTION__);
@@ -218,19 +245,6 @@ uint32_t WINAPI M2DEScriptHook::mainThread(LPVOID) {
 		if (GetAsyncKeyState(VK_F1) & 1) {
 			ScriptSystem::instance()->ReloadScripts();
 		}
-		if (GetAsyncKeyState(VK_F2) & 1) {
-			instance->Shutdown();
-			PluginSystem::instance()->ReloadPlugins();
-		}
-		/*
-		if (GetAsyncKeyState(VK_F3) & 1) {
-			instance->Shutdown();
-		}
-
-		if (GetAsyncKeyState(VK_F6) & 1) {
-			instance->Shutdown();
-			PluginSystem::instance()->UnloadPlugins();
-		}*/
 
 	}
 

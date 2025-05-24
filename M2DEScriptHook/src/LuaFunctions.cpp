@@ -180,7 +180,7 @@ lua_State* GetL()
 
 		static C_ScriptMachineManager* GetInstance()
 		{
-			return *(C_ScriptMachineManager**)(0x141CB83E8);
+			return *(C_ScriptMachineManager**)(0x141CB1238);
 		}
 		C_ScriptGameMachine* GetScriptMachine(int32_t idx) 
 		{
@@ -311,7 +311,7 @@ LuaFunctions::LuaFunctions()
 	// Yep, it's thread blocking, but that's what I want, no processing of other stuff until this shit's ready..
 	do {
 		M2DEScriptHook::instance()->Log(__FUNCTION__ " Game is not ready, script engine not initialized, retry");
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		std::this_thread::yield();
 	} while (!LoadPointers());
 } 
@@ -333,7 +333,7 @@ bool LuaFunctions::LoadPointers()
 
 	//
 	//auto pCallAddr = GetPointerFromPattern("lua_pcall", "E8 ? ? ? ? 85 C0 74 05 48 83 43 ? ?");
-	auto pCall = 0x00000001405CAE00; // pCallAddr + *(int32_t*)(pCallAddr + 1) + 5;
+	auto pCall = 0x1405CB600; // pCallAddr + *(int32_t*)(pCallAddr + 1) + 5;
 	logPointer("lua_pcall", pCall);
 	plua_pcall2 = (lua_pcall_t)pCall;
 	if (!plua_pcall2) {
@@ -341,7 +341,7 @@ bool LuaFunctions::LoadPointers()
 	}
 
 	//
-	plua_tostring = (lua_tostring_t)0x1405CB930; // (lua_tostring_t)GetPointerFromPattern("lua_tostring", "4C 8B C9 81 FA ? ? ? ? 7E 37");
+	plua_tostring = (lua_tostring_t)0x1405CC130; // (lua_tostring_t)GetPointerFromPattern("lua_tostring", "4C 8B C9 81 FA ? ? ? ? 7E 37");
 	logPointer("lua_tostring", (uintptr_t)plua_tostring);
 	if (!plua_tostring) {
 		return m_mainScriptMachineReady;
@@ -349,7 +349,7 @@ bool LuaFunctions::LoadPointers()
 
 	//
 	//auto isStringAddr = GetPointerFromPattern("lua_isstring", "E8 ? ? ? ? 85 C0 74 5E 8B D3");
-	auto isStringAddr = 0x1405CAB80; //  isStringAddr + *(int32_t*)(isStringAddr + 1) + 5;
+	auto isStringAddr = 0x1405CB380; //  isStringAddr + *(int32_t*)(isStringAddr + 1) + 5;
 	logPointer("lua_isstring", isStringAddr);
 	plua_isstring = (lua_isstring_t)isStringAddr;
 	if (!plua_isstring) {
@@ -358,7 +358,7 @@ bool LuaFunctions::LoadPointers()
 
 	//
 	//auto loadBufferAddr = GetPointerFromPattern("lua_loadbuffer", "E8 ? ? ? ? 8B F8 85 FF 74 17");
-	auto loadBuffer = 0x1405CCC70; // loadBufferAddr + *(int32_t*)(loadBufferAddr + 1) + 5;
+	auto loadBuffer = 0x1405CD470; // loadBufferAddr + *(int32_t*)(loadBufferAddr + 1) + 5;
 	logPointer("lua_loadBuffer", loadBuffer);
 	pluaL_loadbuffer = (luaL_loadbuffer_t)loadBuffer;
 	if (!pluaL_loadbuffer) {
@@ -368,7 +368,7 @@ bool LuaFunctions::LoadPointers()
 	//
 	/*auto pushClosureAddr = GetPointerFromPattern("lua_pushcclosure", "E8 ? ? ? ? 48 8B 47 48 45 33 C9");
 	*/
-	auto pushClosure = 0x1405CAEB0; //;pushClosureAddr + *(int32_t *)(pushClosureAddr + 1) + 5;
+	auto pushClosure = 0x1405CB6B0; //;pushClosureAddr + *(int32_t *)(pushClosureAddr + 1) + 5;
 	logPointer("lua_pushcclosure", pushClosure);
 	plua_pushcclosure = (lua_pushcclosure_t)pushClosure;
 	if (!plua_pushcclosure) {
@@ -377,7 +377,7 @@ bool LuaFunctions::LoadPointers()
 
 	//
 	//auto setFieldAddr = GetPointerFromPattern("lua_setfield", "E8 ? ? ? ? 8B D5 49 8B CF E8 ? ? ? ? 41 8B D6");
-	auto setField = 0x1405CB5F0;//setFieldAddr + *(int32_t *)(setFieldAddr + 1) + 5;
+	auto setField = 0x1405CBDF0;//setFieldAddr + *(int32_t *)(setFieldAddr + 1) + 5;
 	logPointer("lua_setfield", setField);
 	plua_setfield = (lua_setfield_t)setField;
 	if (!plua_setfield) {
