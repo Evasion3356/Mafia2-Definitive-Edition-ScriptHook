@@ -27,12 +27,8 @@ jobs:
         run: |
           move build\Release_Github\dxgi.dll files\dxgi.dll
 
-      - name: Create Release.zip (Fix Nested Issue)
-        run: |
-          powershell -Command "Compress-Archive -Path files\* -DestinationPath Release.zip -Force"
-
       - name: Upload Release.zip as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Release
-          path: Release.zip
+          path: files
