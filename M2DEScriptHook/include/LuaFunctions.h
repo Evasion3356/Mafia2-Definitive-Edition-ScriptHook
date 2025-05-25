@@ -35,7 +35,6 @@
 
 class LuaFunctions : public singleton<LuaFunctions> {
 private:
-	bool m_mainScriptMachineReady = false;
 	std::map<unsigned char, std::string> keyBinds = {};
 
 	static int32_t PrintToLog(lua_State*);
@@ -58,4 +57,4 @@ __declspec(dllexport) int lua_pcall_(lua_State *L, int nargs, int nresults, int 
 __declspec(dllexport) const char *lua_tostring_(lua_State *L, int32_t idx);
 __declspec(dllexport) uint32_t lua_isstring_(lua_State *L, int32_t idx);
 __declspec(dllexport) lua_State *lua_newthread_(lua_State *L);
-__declspec(dllexport) void logPointer(std::string name, uint64_t pointer);
+__declspec(dllexport) void logPointer(std::string name, void* pointer);

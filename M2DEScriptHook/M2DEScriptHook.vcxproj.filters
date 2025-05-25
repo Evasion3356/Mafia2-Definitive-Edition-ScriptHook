@@ -144,6 +144,9 @@
     <ClInclude Include="include\M2DEScriptHook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\PatternScanner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src/LuaFunctions.cpp">

@@ -131,6 +131,7 @@
     <ClInclude Include="include/LuaStateManager.h" />
     <ClInclude Include="include\M2DEScriptHook.h" />
     <ClInclude Include="include/PluginSystem.h" />
+    <ClInclude Include="include\PatternScanner.h" />
     <ClInclude Include="include\ScriptSystem.h" />
   </ItemGroup>
   <ItemGroup>

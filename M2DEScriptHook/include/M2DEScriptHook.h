@@ -112,7 +112,6 @@ public:
 	static uint32_t WINAPI mainThread(LPVOID);
 	void StartThreads();
 	bool HasEnded();
-	void Shutdown();
 
 	void CreateKeyBind(const char *key, const char *context);
 	void DestroyKeyBind(const char *key, const char *context);

@@ -280,14 +280,6 @@ bool M2DEScriptHook::HasEnded()
 	return this->m_bEnded;
 }
 
-void M2DEScriptHook::Shutdown()
-{
-	this->Log(__FUNCTION__);
-	this->m_bEnded = true;
-	this->EndThreads();
-	FreeLibraryAndExitThread((HMODULE)GetModuleHandle("M2DEScriptHook.dll"), 0);
-}
-
 void M2DEScriptHook::CreateKeyBind(const char *key, const char *context)
 {
 	M2DEScriptHook::instance()->Log("Binding key %s to function %s", key, context);
@@ -373,9 +365,6 @@ BOOL APIENTRY DllMain(HMODULE, DWORD code, LPVOID) {
 	case DLL_PROCESS_ATTACH:
 		PluginSystem::instance()->LoadPlugins();
 		M2DEScriptHook::instance()->StartThreads();
-		break;
-	case DLL_PROCESS_DETACH:
-		M2DEScriptHook::instance()->Shutdown();
 		break;
 	}
 	return TRUE;

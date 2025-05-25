@@ -40,15 +40,7 @@
 #include <hooking/hooking.h>
 #include <fstream>
 #include <thread>
-
- /************************************************************************/
- /* Find pattern implementation											*/
- /************************************************************************/
-uint64_t GetPointerFromPattern(const char *name, const char *pattern)
-{
-	auto pat = hooking::pattern(pattern).get(0).origaddr();
-	return pat;
-}
+#include "PatternScanner.h"
 
 /************************************************************************/
 /* Lua Load Buffer impl													*/
@@ -71,6 +63,8 @@ __declspec(dllexport) int32_t lua_pcall_(lua_State *L, int32_t nargs, int32_t nr
 {
 	return plua_pcall2(L, nargs, nresults, errfunc);
 }
+
+class C_ScriptMachineManager* g_scriptMachineManager;
 
 /************************************************************************/
 /* Lua tolstring implementation                                         */
@@ -147,10 +141,28 @@ int32_t lua_gettop_(lua_State *L)
 }
 
 //
-__declspec(dllexport) void logPointer(std::string name, uint64_t pointer)
+
+__declspec(dllexport) void logPointer(std::string name, void* pointer)
 {
+	if (pointer == NULL)
+	{
+		std::stringstream ss;
+		ss << name << "Failed to find: " << name;
+		M2DEScriptHook::instance()->Log(ss.str());
+		return;
+	}
+
+	// Get the base address of the main module
+	uint64_t baseAddress = reinterpret_cast<uint64_t>(GetModuleHandle(nullptr));
+
+	// Calculate the offset
+	uint64_t offset = (DWORD64)pointer - baseAddress;
+
+	// Format the log message
 	std::stringstream ss;
-	ss << name << " (" << std::hex << pointer << ")";
+	ss << name << " Mafia II Definitive Edition.exe+0x" << std::hex << std::uppercase << offset;
+
+	// Log the message
 	M2DEScriptHook::instance()->Log(ss.str().c_str());
 }
 
@@ -180,7 +192,7 @@ lua_State* GetL()
 
 		static C_ScriptMachineManager* GetInstance()
 		{
-			return *(C_ScriptMachineManager**)(0x141CB1238);
+			return *(C_ScriptMachineManager**)g_scriptMachineManager;
 		}
 		C_ScriptGameMachine* GetScriptMachine(int32_t idx) 
 		{
@@ -324,101 +336,51 @@ bool LuaFunctions::LoadPointers()
 {
 	M2DEScriptHook::instance()->Log(__FUNCTION__);
 
-	/*uint64_t engineAssignAddress = hooking::pattern("48 89 05 ? ? ? ? 48 8B 10 FF 92 ? ? ? ?").get(0).origaddr();
-	uint64_t engine = engineAssignAddress + *(int32_t *)(engineAssignAddress + 3) + 7;
-	if (*(uintptr_t *)engine == 0) {
-		return this->m_mainScriptMachineReady;
-	}*/
-
-	//
-	//auto pCallAddr = GetPointerFromPattern("lua_pcall", "E8 ? ? ? ? 85 C0 74 05 48 83 43 ? ?");
-	auto pCall = 0x1405CB600; // pCallAddr + *(int32_t*)(pCallAddr + 1) + 5;
-	logPointer("lua_pcall", pCall);
-	plua_pcall2 = (lua_pcall_t)pCall;
-	if (!plua_pcall2) {
-		return m_mainScriptMachineReady;
+	if (auto scriptMachineManager = PatternScanner::Scan("48 89 05 ? ? ? ? 80 78", "g_scriptMachineManager"))
+	{
+		g_scriptMachineManager = scriptMachineManager.GetRef(3).To<C_ScriptMachineManager*>();
+		logPointer("g_scriptMachineManager", g_scriptMachineManager);
 	}
 
-	//
-	plua_tostring = (lua_tostring_t)0x1405CC130; // (lua_tostring_t)GetPointerFromPattern("lua_tostring", "4C 8B C9 81 FA ? ? ? ? 7E 37");
-	logPointer("lua_tostring", (uintptr_t)plua_tostring);
-	if (!plua_tostring) {
-		return m_mainScriptMachineReady;
+	if (auto pCall = PatternScanner::Scan("E8 ? ? ? ? 85 C0 0F 45 FF", "lua_pcall"))
+	{
+		plua_pcall2 = pCall.GetCall().To<lua_pcall_t>();
+		logPointer("lua_pcall", plua_pcall2);
 	}
 
-	//
-	//auto isStringAddr = GetPointerFromPattern("lua_isstring", "E8 ? ? ? ? 85 C0 74 5E 8B D3");
-	auto isStringAddr = 0x1405CB380; //  isStringAddr + *(int32_t*)(isStringAddr + 1) + 5;
-	logPointer("lua_isstring", isStringAddr);
-	plua_isstring = (lua_isstring_t)isStringAddr;
-	if (!plua_isstring) {
-		return m_mainScriptMachineReady;
+	if (auto toString = PatternScanner::Scan("E8 ? ? ? ? 48 8B D8 4C 8B CE", "lua_tostring"))
+	{
+		plua_tostring = toString.GetCall().To<lua_tostring_t>();
+		logPointer("lua_tostring", plua_tostring);
 	}
 
-	//
-	//auto loadBufferAddr = GetPointerFromPattern("lua_loadbuffer", "E8 ? ? ? ? 8B F8 85 FF 74 17");
-	auto loadBuffer = 0x1405CD470; // loadBufferAddr + *(int32_t*)(loadBufferAddr + 1) + 5;
-	logPointer("lua_loadBuffer", loadBuffer);
-	pluaL_loadbuffer = (luaL_loadbuffer_t)loadBuffer;
-	if (!pluaL_loadbuffer) {
-		return m_mainScriptMachineReady;
+	if (auto isString = PatternScanner::Scan("E8 ? ? ? ? 49 8B CE 85 C0 75", "lua_isstring"))
+	{
+		plua_isstring = isString.GetCall().To<lua_isstring_t>();
+		logPointer("lua_isstring", plua_isstring);
 	}
 
-	//
-	/*auto pushClosureAddr = GetPointerFromPattern("lua_pushcclosure", "E8 ? ? ? ? 48 8B 47 48 45 33 C9");
-	*/
-	auto pushClosure = 0x1405CB6B0; //;pushClosureAddr + *(int32_t *)(pushClosureAddr + 1) + 5;
-	logPointer("lua_pushcclosure", pushClosure);
-	plua_pushcclosure = (lua_pushcclosure_t)pushClosure;
-	if (!plua_pushcclosure) {
-		return m_mainScriptMachineReady;
+	if (auto loadBuffer = PatternScanner::Scan("E8 ? ? ? ? 48 8B 4F ? 85 C0 0F 85", "lua_loadBuffer"))
+	{
+		pluaL_loadbuffer = loadBuffer.GetCall().To<luaL_loadbuffer_t>();
+		logPointer("lua_loadBuffer", pluaL_loadbuffer);
 	}
 
-	//
-	//auto setFieldAddr = GetPointerFromPattern("lua_setfield", "E8 ? ? ? ? 8B D5 49 8B CF E8 ? ? ? ? 41 8B D6");
-	auto setField = 0x1405CBDF0;//setFieldAddr + *(int32_t *)(setFieldAddr + 1) + 5;
-	logPointer("lua_setfield", setField);
-	plua_setfield = (lua_setfield_t)setField;
-	if (!plua_setfield) {
-		return m_mainScriptMachineReady;
+	if (auto pushClosure = PatternScanner::Scan("E8 ? ? ? ? 4D 8B 06 41 8B D7", "lua_pushcclosure"))
+	{
+		plua_pushcclosure = pushClosure.GetCall().To<lua_pushcclosure_t>();
+		logPointer("lua_pushcclosure", plua_pushcclosure);
 	}
 
-	//
-	//auto setGobalAddr = GetPointerFromPattern("lua_setglobal", "E8 ? ? ? ? 48 8B 54 24 ? 48 8B CE E8 ? ? ? ? 85 C0");
-	/*auto setGlobal = 0x0//setGobalAddr + *(int32_t *)(setGobalAddr + 1) + 5;
-	logPointer("lua_setglobal", setGlobal);
-	plua_setglobal = (lua_setglobal_t)setGlobal;
-	if (!plua_setglobal) {
-		return this->m_mainScriptMachineReady;
-	}*/
-
-	//
-	m_mainScriptMachineReady = true;
+	if (auto setField = PatternScanner::Scan("E8 ? ? ? ? 8B 56 ? 85 D2", "lua_pushcclosure"))
+	{
+		plua_setfield = setField.GetCall().To<lua_setfield_t>();
+		logPointer("lua_setfield", plua_setfield);
+	}
 
 	M2DEScriptHook::instance()->Log(__FUNCTION__ " Finished");
-	
-	return m_mainScriptMachineReady;
 
-	/*static auto pat = hooking::pattern("4C 8B 0D ? ? ? ? 33 ED").get(0).origaddr();
-	auto patAddr = pat + *(int32_t *)(pat + 3) + 7;
-	patAddr = *(uint64_t *)patAddr;
-	memcpy((void*)patAddr, "/gui/main_menu_dev.swf", strlen("/gui/main_menu_dev.swf"));
-	*/
-
-	/*
-	static auto addr = hooking::pattern("F3 0F 10 0D ? ? ? ? 4C 8D 44 24 ? F3 48 0F 2C D0").get(0).origaddr();
-	static auto inc = hooking::inject_call<uintptr_t, lua_State*, int32_t>((addr + 0x62));
-	inc.inject([](lua_State *L, int32_t a2) {
-	const char *test;
-	if (plua_isstring(L, 1))
-	{
-	test = plua_tostring(L, 1);
-	}
-
-	M3ScriptHook::instance()->Log("Entity: %s", test);
-
-	return inc.call(L, a2);
-	});*/
+	return true;
 }
 
 bool LuaFunctions::Setup()
