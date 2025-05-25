@@ -154,9 +154,10 @@ __declspec(dllexport) void logPointer(std::string name, void* pointer)
 
 	// Get the base address of the main module
 	uint64_t baseAddress = reinterpret_cast<uint64_t>(GetModuleHandle(nullptr));
+	uint64_t pointerAddress = reinterpret_cast<uint64_t>(pointer);
 
 	// Calculate the offset
-	uint64_t offset = (DWORD64)pointer - baseAddress;
+	uint64_t offset = pointerAddress - baseAddress;
 
 	// Format the log message
 	std::stringstream ss;
@@ -247,17 +248,12 @@ int32_t LuaFunctions::BindKey(lua_State *L)
 int32_t LuaFunctions::UnbindKey(lua_State *L)
 {
 	const char *key = "";
-	const char *context = "";
 
 	if (plua_isstring(L, 1)) {
 		key = plua_tostring(L, 1, nullptr);
 	}
 
-	if (plua_isstring(L, 2)) {
-		context = plua_tostring(L, 2, nullptr);
-	}
-
-	M2DEScriptHook::instance()->DestroyKeyBind(key, context);
+	M2DEScriptHook::instance()->DestroyKeyBind(key);
 	return 0;
 }
 

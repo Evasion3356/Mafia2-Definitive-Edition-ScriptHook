@@ -74,8 +74,8 @@
 
 M2DEScriptHook::M2DEScriptHook()
 {
-	Log(__FUNCTION__);
-	hooking::hooking_helpers::SetExecutableAddress((uintptr_t)GetModuleHandle(0)); 
+	this->Log(__FUNCTION__);
+	hooking::hooking_helpers::SetExecutableAddress(reinterpret_cast<uintptr_t>(GetModuleHandle(nullptr)));
 	hooking::ExecutableInfo::instance()->EnsureExecutableInfo();
 	hooking::ExecutableInfo::instance()->GetExecutableInfo().SetSSEPatternSearching(false);
 
@@ -132,37 +132,14 @@ void M2DEScriptHook::Log(std::string message)
 
 void M2DEScriptHook::LogToFile(const char *fileName, const char *string, ...)
 {
-	static int32_t currentBuffer;
-	static char* buffer = nullptr;
+	char tempBuffer[BUFFER_LENGTH];
 
-	if (!buffer)
-	{
-		buffer = new char[BUFFER_COUNT * BUFFER_LENGTH];
-	}
+	va_list args;
+	va_start(args, string);
+	vsnprintf(tempBuffer, BUFFER_LENGTH, string, args);
+	va_end(args);
 
-	int32_t thisBuffer = currentBuffer;
-
-	va_list ap;
-	va_start(ap, string);
-	int32_t length = vsnprintf(&buffer[thisBuffer * BUFFER_LENGTH], BUFFER_LENGTH, string, ap);
-	va_end(ap);
-
-	if (length >= BUFFER_LENGTH)
-	{
-		__debugbreak();
-		exit(1);
-	}
-
-	buffer[(thisBuffer * BUFFER_LENGTH) + BUFFER_LENGTH - 1] = '\0';
-
-	currentBuffer = (currentBuffer + 1) % BUFFER_COUNT;
-
-	const char* msg = &buffer[thisBuffer * BUFFER_LENGTH];
-
-	std::fstream file(fileName, std::ios::out | std::ios::app);
-	file << msg;
-	file << "\n";
-	file.close();
+	std::ofstream(fileName, std::ios::app) << tempBuffer << std::endl;
 }
 
 void M2DEScriptHook::EndThreads()
@@ -280,56 +257,6 @@ bool M2DEScriptHook::HasEnded()
 	return this->m_bEnded;
 }
 
-void M2DEScriptHook::CreateKeyBind(const char *key, const char *context)
-{
-	M2DEScriptHook::instance()->Log("Binding key %s to function %s", key, context);
-	std::unique_lock<std::recursive_mutex> lkScr(_keyBindMutex);
-
-	bool found = false;
-	uint8_t keyID = -1;
-	for (int32_t i = 0; i < 0xFE && !found; ++i) {
-		if (strcmp(key, BindableKeys[i]) == 0) {
-			keyID = i;
-			found = true;
-			break;
-		}
-	}
-	if (found) {
-		this->keyBinds[keyID] = context; //.push_back(new M3KeyBind(keyID, context));
-	}
-	else {
-		this->Log("Could not create keybind, key %s is unknown", key);
-	}
-}
-
-void M2DEScriptHook::DestroyKeyBind(const char *key, const char *context)
-{
-	M2DEScriptHook::instance()->Log("Unbinding key %", key);
-	//std::lock_guard<std::mutex> lk{ _keyBindMutex };
-	std::unique_lock<std::recursive_mutex> lkScr(_keyBindMutex);
-
-	bool found = false;
-	uint8_t keyID = -1;
-	for (int32_t i = 0; i < 0xFE && !found; ++i) {
-		if (strcmp(key, BindableKeys[i]) == 0) {
-			keyID = i;
-			found = true;
-			break;
-		}
-	}
-
-	if (found)
-	{
-		/*for (auto bind : keyBinds) //; it != keyBinds.end();)
-		{
-			if (bind->key == keyID) {
-				keyBinds.erase(std::remove(keyBinds.begin(), keyBinds.end(), bind), keyBinds.end());
-			}
-		}*/
-		this->keyBinds.erase(keyID);
-	}
-}
-
 void M2DEScriptHook::ProcessKeyBinds()
 {
 	//this->Log(__FUNCTION__);
@@ -358,6 +285,33 @@ void M2DEScriptHook::ProcessKeyBinds()
 		}
 	}
 
+}
+
+void M2DEScriptHook::CreateKeyBind(const char* key, const char* context)
+{
+	Log("Binding key %s to function %s", key, context);
+
+	uint8_t keyID = GetKeyID(key);
+	if (keyID == 0xFF)
+	{
+		Log("Could not create keybind, key %s is unknown", key);
+		return;
+	}
+
+	std::unique_lock<std::recursive_mutex> lkScr(_keyBindMutex);
+	keyBinds[keyID] = context;
+}
+
+void M2DEScriptHook::DestroyKeyBind(const char* key)
+{
+	Log("Unbinding key %s", key);
+
+	uint8_t keyID = GetKeyID(key);
+	if (keyID != 0xFF)
+	{
+		std::unique_lock<std::recursive_mutex> lkScr(_keyBindMutex);
+		keyBinds.erase(keyID);
+	}
 }
 
 BOOL APIENTRY DllMain(HMODULE, DWORD code, LPVOID) {
