@@ -1,0 +1,38 @@
+name: Build and Package M2DEScriptHook
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build Solution
+        run: |
+          msbuild M2DEScriptHook.sln /p:Configuration=Release_Github /p:Platform=x64
+
+      - name: Move dxgi.dll to files folder
+        run: |
+          move build\Release_Github\dxgi.dll files\dxgi.dll
+
+      - name: Create Release.zip (Fix Nested Issue)
+        run: |
+          powershell -Command "Compress-Archive -Path files\* -DestinationPath Release.zip -Force"
+
+      - name: Upload Release.zip as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Release
+          path: Release.zip
