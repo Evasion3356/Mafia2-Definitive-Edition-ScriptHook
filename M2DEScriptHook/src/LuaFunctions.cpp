@@ -207,10 +207,7 @@ lua_State* GetL()
 		}
 	};
 
-	auto inst = C_ScriptMachineManager::GetInstance();
-	auto scriptMachine = inst->GetFirstScriptMachine();
-	auto luaState = scriptMachine->GetLuaState();
-	return (lua_State*)luaState;
+	return C_ScriptMachineManager::GetInstance()->GetFirstScriptMachine()->GetLuaState();
 }
 
 int32_t LuaFunctions::PrintToLog(lua_State *L)
