@@ -21,9 +21,7 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
-[Rr]elease-DXGI/
-[Rr]elease-Logging/
-[Rr]eleases-Logging/
+[Rr]elease_Github/
 x64/
 x86/
 [Ww][Ii][Nn]32/

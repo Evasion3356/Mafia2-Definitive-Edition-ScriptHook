@@ -56,7 +56,7 @@ class M2DEScriptHook : public singleton<M2DEScriptHook>
 {
 private:
 	bool m_bEnded = false;
-	std::map<uint8_t, std::string> keyBinds;
+	std::unordered_map<uint8_t, std::string> keyBinds;
 	std::recursive_mutex _keyBindMutex;
 
 	uint8_t GetKeyID(const std::string& key)
