@@ -208,6 +208,10 @@ lua_State* GetL()
 		}
 	};
 
+	if (g_scriptMachineManager == nullptr)
+	{
+		return nullptr;
+	}
 	return C_ScriptMachineManager::GetInstance()->GetFirstScriptMachine()->GetLuaState();
 }
 

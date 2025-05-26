@@ -4,6 +4,7 @@
 #include <Psapi.h>
 #include <cstdint>
 #include <sstream>
+#include "M2DEScriptHook.h"
 
 /**
  * \brief Provides compact utility to scan patterns and manipulate addresses.
@@ -118,8 +119,9 @@ struct PatternScanner
 
 		std::stringstream ss;
 		ss << "Failed to find " << (debugName) ? debugName : patternStr;
+		M2DEScriptHook::instance()->Log(ss.str());
 		MessageBox(NULL, ss.str().c_str(), "SIGNATURE FAILURE!", MB_ICONERROR | MB_OK);
-
+		exit(0);
 		return { 0 };
 	}
 
