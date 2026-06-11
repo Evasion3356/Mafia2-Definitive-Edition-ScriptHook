@@ -208,11 +208,14 @@ lua_State* GetL()
 		}
 	};
 
-	if (g_scriptMachineManager == nullptr)
+	if (g_scriptMachineManager) [[likely]]
 	{
-		return nullptr;
+		if (auto* mgr = C_ScriptMachineManager::GetInstance()) [[likely]]
+		{
+			return mgr->GetFirstScriptMachine()->GetLuaState();
+		}
 	}
-	return C_ScriptMachineManager::GetInstance()->GetFirstScriptMachine()->GetLuaState();
+	return nullptr;
 }
 
 int32_t LuaFunctions::PrintToLog(lua_State *L)
